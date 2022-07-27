@@ -1,8 +1,7 @@
 {
-  "name": "h5-scan-qrcode",
+  "name": "yuehesuan",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://dragonir.github.io/h5-scan-qrcode",
   "scripts": {
     "start": "vue-cli-service serve",
     "serve": "vue-cli-service serve",
