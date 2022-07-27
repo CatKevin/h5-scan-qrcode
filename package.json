@@ -16,7 +16,8 @@
     "jsqr": "^1.4.0",
     "vue": "^2.6.11",
     "vue-router": "^3.5.2",
-    "webrtc-adapter": "^8.1.0"
+    "webrtc-adapter": "^8.1.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@vue/cli-plugin-babel": "~4.5.0",

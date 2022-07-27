@@ -1,20 +1,182 @@
 <template>
-  <div class="home">
-    <i class="banner"></i>
-    <div class="tips">
-      <p class="tips_title">核酸检测信息统计</p>
-      <p class="tips_descript">仅用于组织单位内部使用</p>
+  <div>
+    <div class="home" v-if="toScanQrcodeFlag!=true">
+      <i class="banner"></i>
+      <div class="tips">
+        <p class="tips_title">核酸检测信息统计</p>
+        <p class="tips_descript">仅用于组织单位内部使用</p>
+      </div>
+      <button class="button" v-if="importFileFlag==true" @click="toScanQrcode">识别粤核酸码</button>
+      <div class="flex-display" v-if="importFileFlag==false" >
+        <div class="left-box">上传员工数据：</div>
+        <input type="file" v-on:change="onChange" class="file-ipt" />
+      </div>
+      <div class="flex-display" v-if="importFileFlag==true" >
+        <div class="centre-box">已上传员工人数为：{{tableData[0].length}}</div>
+      </div>
     </div>
-    <button class="button" @click="$router.push({name: 'Scan'})">识别粤核酸码</button>
+
+    <div class="scan"  v-else>
+      <div class="nav">
+        <a class="close" @click="() => $router.go(-1)"></a>
+        <p class="title">粤核酸码扫码</p>
+      </div>
+      <div class="scroll-container">
+        <Scaner
+          v-on:code-scanned="codeScanned"
+          v-on:error-captured="errorCaptured"
+          :stop-on-scanned="true"
+          :draw-on-found="true"
+          :responsive="false"
+        />
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
+import { read, utils } from "xlsx"; // 注意处理方法引入方式
+import Scaner from '../components/Scaner';
+
 
 export default {
-  name: 'Home'
+  name: 'Home',
+  components: {
+    Scaner
+  },
+  data () {
+    return {
+     importFileFlag:false,
+     toScanQrcodeFlag:false,
+      fileList: [], //上传文件列表
+      tableHead: [], //表头
+      tableData: [], // 表数据
+      errorMessage: "",
+      scanned: "",
+      database:{}
+    }
+  },
+  mounted () {
+    var str = navigator.userAgent.toLowerCase(); 
+    var ver = str.match(/cpu iphone os (.*?) like mac os/);
+    if (ver && ver[1].replace(/_/g,".") < '10.3.3') {
+     alert('相机调用失败');
+    }
+  },
+  methods: {
+    toScanQrcode(){
+      this.toScanQrcodeFlag = true
+      console.log(this.toScanQrcodeFlag)
+    },
+    codeScanned(code) {
+      this.scanned = code;
+      setTimeout(() => {
+        // alert(`扫码解析成功: ${code}`);
+        alert(`扫码解析成功: ${this.database[code]!=null?this.database[code].name+"-"+this.database[code].department:"无数据"}`);
+      }, 200)
+    },
+    errorCaptured(error) {
+      switch (error.name) {
+        case "NotAllowedError":
+          this.errorMessage = "Camera permission denied.";
+          break;
+        case "NotFoundError":
+          this.errorMessage = "There is no connected camera.";
+          break;
+        case "NotSupportedError":
+          this.errorMessage =
+            "Seems like this page is served in non-secure context.";
+          break;
+        case "NotReadableError":
+          this.errorMessage =
+            "Couldn't access your camera. Is it already in use?";
+          break;
+        case "OverconstrainedError":
+          this.errorMessage = "Constraints don't match any installed camera.";
+          break;
+        default:
+          this.errorMessage = "UNKNOWN ERROR: " + error.message;
+      }
+      console.error(this.errorMessage);
+     alert('相机调用失败');
+    },
+    onChange(e) {
+      const self = this;
+      const file = e.target.files[0];
+      const fileReader = new FileReader();
+
+      fileReader.onload = ev => {
+        try {
+          const data = ev.target.result;
+          const workbook = read(data, { type: "binary" });
+          const params = [];
+          // 取对应表生成json表格内容
+          workbook.SheetNames.forEach(item => {
+            params.push({
+              name: item,
+              dataList: utils.sheet_to_json(workbook.Sheets[item])
+            });
+            this.tableData.push(utils.sheet_to_json(workbook.Sheets[item]));
+          });
+          console.log(this.tableData)
+          for(let i=0; i<this.tableData[0].length;i++) {
+            this.database[this.tableData[0][i].粤核酸码] = {
+              name:this.tableData[0][i].姓名,
+              department:this.tableData[0][i].部门,
+            }
+          }
+          console.log(this.database)
+          // 该算法仅针对表头无合并的情况
+          if (this.tableData.length > 0) {
+            // 获取excel中第一个表格数据tableData[0][0]，并且将表头提取出来
+            for (const key in this.tableData[0][0]) {
+              this.tableHead.push(key);
+            }
+          }
+          self.importFileFlag = true
+          return params;
+          // 重写数据
+        } catch (e) {
+          console.log("error:" + e);
+          return false;
+        }
+      };
+      fileReader.readAsBinaryString(file);
+    },
+  }
 }
 </script>
+
+<style lang="css" scoped>
+.scan {
+  height: 100%;
+  width: 100%;
+}
+.scan .nav {
+  width: 100%;
+  height: 48px;
+  line-height: 48px;
+  position: fixed;
+  top: 0;
+  left: 0;
+}
+.scan .nav .title {
+  padding: 0;
+  margin: 0;
+  font-size: 16px;
+  color: #FFFFFF;
+}
+.scan .nav .close {
+  display: inline-block;
+  height: 22px;
+  width: 22px;
+  background: url('../assets/back.png') no-repeat center;
+  background-size: auto 100%;
+  position: absolute;
+  left: 16px;
+  top: 14px;
+}
+</style>
 
 <style>
 .home {
@@ -82,5 +244,34 @@ export default {
   100% {
     transform: translateY(0px);
   }
+}
+
+.flex-display {
+  margin: 50px 30px;
+  width: 100%;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.left-box {
+    margin: 20 30;
+    height: 36px;
+    line-height: 36px;
+    color:white;
+  }
+  .centre-box {
+    margin: auto;
+    height: 36px;
+    line-height: 36px;
+    color:white;
+  }
+.file-ipt {
+  width: 200px;
+  height: 36px;
+  line-height: 36px;
+}
+
+input #file-upload-button {
+  background-color: #409eff;
 }
 </style>
