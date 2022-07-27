@@ -2,7 +2,7 @@
   <div class="scan">
     <div class="nav">
       <a class="close" @click="() => $router.go(-1)"></a>
-      <p class="title">Scan QRcode</p>
+      <p class="title">粤核酸码扫码</p>
     </div>
     <div class="scroll-container">
       <Scaner
@@ -20,6 +20,10 @@
 
 import Scaner from '../components/Scaner';
 
+const database = {
+  "A6ICIxIiwKICAicGVyc29uTmFtZSIgOiAi5YiY5bqG5pilIiwK2QzZTc0ZTliZTUxOCIsCiAgInICAiYXBwSWQiIDogInd4Y2E1MBob25lTnVtYmVyIiA6ICiZDM2YmQ0MDgwN2QyNDJkZWI4M2IwNWVlOGYAIxNDc3ODIwODMwNyIKfQ==ewogICJpZCIgOi1MGVkNWEiLAogICJpZGVudGl0eU51bWJlciIgOiAiNDQxNDI2MTk5ODA0MTAwMzE0IiwKICAiaWRlbnRpdHlUeXBlIiver-2.0":"姓名：六蛋"
+};
+
 export default {
   name: 'Scan',
   components: {
@@ -28,14 +32,15 @@ export default {
   data () {
     return {
       errorMessage: "",
-      scanned: ""
+      scanned: "",
     }
   },
   methods: {
     codeScanned(code) {
       this.scanned = code;
       setTimeout(() => {
-        alert(`扫码解析成功: ${code}`);
+        // alert(`扫码解析成功: ${code}`);
+        alert(`扫码解析成功: ${database[code]!=null?database[code]:"无数据"}`);
       }, 200)
     },
     errorCaptured(error) {

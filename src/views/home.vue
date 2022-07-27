@@ -2,10 +2,10 @@
   <div class="home">
     <i class="banner"></i>
     <div class="tips">
-      <p class="tips_title">HELLO WORLD</p>
-      <p class="tips_descript">Scan QRcode By Your Browser</p>
+      <p class="tips_title">核酸检测信息统计</p>
+      <p class="tips_descript">仅用于组织单位内部使用</p>
     </div>
-    <button class="button" @click="$router.push({name: 'Scan'})">SCAN QRCODE</button>
+    <button class="button" @click="$router.push({name: 'Scan'})">识别粤核酸码</button>
   </div>
 </template>
 
