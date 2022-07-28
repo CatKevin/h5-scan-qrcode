@@ -5,6 +5,8 @@
       <div class="tips">
         <p class="tips_title">核酸检测信息统计</p>
         <p class="tips_descript">仅用于组织单位内部使用</p>
+        <button @click="exportFirstFile"  v-if="importFileFlag==true">导出已做核酸数据</button>
+        <button @click="exportSecondFile"  v-if="importFileFlag==true">导出未做核酸数据</button>
       </div>
       <button class="button" v-if="importFileFlag==true" @click="toScanQrcode">识别粤核酸码</button>
       <div class="flex-display" v-if="importFileFlag==false" >
@@ -12,13 +14,13 @@
         <input type="file" v-on:change="onChange" class="file-ipt" />
       </div>
       <div class="flex-display" v-if="importFileFlag==true" >
-        <div class="centre-box">已上传员工人数为：{{tableData[0].length}}</div>
+        <div class="centre-box">核酸检测进度：{{donePeopleNum}}人 / {{tableData[0].length}}人</div>
       </div>
     </div>
 
     <div class="scan"  v-else>
       <div class="nav">
-        <a class="close" @click="() => $router.go(-1)"></a>
+        <a class="close" @click="returnToHome"></a>
         <p class="title">粤核酸码扫码</p>
       </div>
       <div class="scroll-container">
@@ -37,7 +39,7 @@
 <script>
 import { read, utils } from "xlsx"; // 注意处理方法引入方式
 import Scaner from '../components/Scaner';
-
+import excelUtil from '@/utils/ExcelUtils.js';
 
 export default {
   name: 'Home',
@@ -53,8 +55,18 @@ export default {
       tableData: [], // 表数据
       errorMessage: "",
       scanned: "",
-      database:{}
+      database:{},
+      donePeopleNum:0,
+      donePeopleObj:{},
+      qrcodeIsUsed:{},
     }
+  },
+  created() {
+    this.fileList = []
+    this.tableHead = []
+    this.tableData = []
+    this.qrcodeIsUsed = {}
+    this.donePeopleNum = 0
   },
   mounted () {
     var str = navigator.userAgent.toLowerCase(); 
@@ -64,6 +76,9 @@ export default {
     }
   },
   methods: {
+    returnToHome(){
+      this.toScanQrcodeFlag = false
+    },
     toScanQrcode(){
       this.toScanQrcodeFlag = true
       console.log(this.toScanQrcodeFlag)
@@ -72,7 +87,20 @@ export default {
       this.scanned = code;
       setTimeout(() => {
         // alert(`扫码解析成功: ${code}`);
-        alert(`扫码解析成功: ${this.database[code]!=null?this.database[code].name+"-"+this.database[code].department:"无数据"}`);
+        if(!this.qrcodeIsUsed[this.database[code].qrcode]){
+          let myDate = new Date()
+          this.donePeopleObj[this.donePeopleNum] = {
+            name:this.database[code].name,
+            department:this.database[code].department,
+            time:myDate.toLocaleString(),
+            qrcode:this.database[code].qrcode
+          }
+          this.qrcodeIsUsed[this.database[code].qrcode] = true
+          this.donePeopleNum = this.donePeopleNum + 1
+          alert(`扫码解析成功: ${this.database[code]!=null?this.database[code].name+"-"+this.database[code].department:"无数据"}`);
+        }else{
+          alert(`已解析过了: ${this.database[code]!=null?this.database[code].name+"-"+this.database[code].department:"无数据"}`);
+        }
       }, 200)
     },
     errorCaptured(error) {
@@ -142,6 +170,56 @@ export default {
         }
       };
       fileReader.readAsBinaryString(file);
+    },
+    exportFirstFile(){
+      const initColumn = [{
+        title: '姓名',
+        dataIndex: 'name',
+        key: 'name',
+        className: 'text-monospace'
+      }, {
+        title: '部门',
+        dataIndex: 'department',
+        key: 'department'
+      },{
+        title: '日期',
+        dataIndex: 'time',
+        key: 'time'
+      }, {
+        title: '粤核酸码',
+        dataIndex: 'qrcode',
+        key: 'qrcode'
+      },]
+
+      let doneList = []
+      for(let i=0; i<this.donePeopleNum; i++){
+        doneList.push(this.donePeopleObj[i])
+      }
+      excelUtil.exportExcel(initColumn, doneList, '已登记人员名单.xlsx')
+    },
+    exportSecondFile(){
+      const initColumn = [{
+        title: '姓名',
+        dataIndex: 'name',
+        key: 'name',
+        className: 'text-monospace'
+      }, {
+        title: '部门',
+        dataIndex: 'department',
+        key: 'department'
+      },{
+        title: '粤核酸码',
+        dataIndex: 'qrcode',
+        key: 'qrcode'
+      },]
+
+      let doneList = []
+      for(let i=0; i<this.tableData[0].length; i++){
+        if(!this.qrcodeIsUsed[this.tableData[0][i].粤核酸码]){
+          doneList.push(this.tableData[0][i])
+        }
+      }
+      excelUtil.exportExcel(initColumn, doneList, '未登记人员名单.xlsx')
     },
   }
 }
