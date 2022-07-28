@@ -85,6 +85,7 @@ export default {
     },
     codeScanned(code) {
       this.scanned = code;
+      console.log(this.database[code])
       setTimeout(() => {
         // alert(`扫码解析成功: ${code}`);
         if(!this.qrcodeIsUsed[this.database[code].qrcode]){
@@ -101,6 +102,7 @@ export default {
         }else{
           alert(`已解析过了: ${this.database[code]!=null?this.database[code].name+"-"+this.database[code].department:"无数据"}`);
         }
+        console.log(this.donePeopleObj)
       }, 200)
     },
     errorCaptured(error) {
@@ -151,6 +153,7 @@ export default {
             this.database[this.tableData[0][i].粤核酸码] = {
               name:this.tableData[0][i].姓名,
               department:this.tableData[0][i].部门,
+              qrcode:this.tableData[0][i].粤核酸码
             }
           }
           console.log(this.database)
@@ -182,7 +185,7 @@ export default {
         dataIndex: 'department',
         key: 'department'
       },{
-        title: '日期',
+        title: '登记时间',
         dataIndex: 'time',
         key: 'time'
       }, {
@@ -195,29 +198,42 @@ export default {
       for(let i=0; i<this.donePeopleNum; i++){
         doneList.push(this.donePeopleObj[i])
       }
+      if(doneList.length==0){
+        alert("无数据可下载！！！")
+        return
+      }
       excelUtil.exportExcel(initColumn, doneList, '已登记人员名单.xlsx')
     },
     exportSecondFile(){
       const initColumn = [{
         title: '姓名',
-        dataIndex: 'name',
-        key: 'name',
+        dataIndex: '姓名',
+        key: '姓名',
         className: 'text-monospace'
       }, {
         title: '部门',
-        dataIndex: 'department',
-        key: 'department'
+        dataIndex: '部门',
+        key: '部门'
+      },{
+        title: '状态',
+        dataIndex: '状态',
+        key: '状态'
       },{
         title: '粤核酸码',
-        dataIndex: 'qrcode',
-        key: 'qrcode'
-      },]
+        dataIndex: '粤核酸码',
+        key: '粤核酸码'
+      }]
 
       let doneList = []
       for(let i=0; i<this.tableData[0].length; i++){
         if(!this.qrcodeIsUsed[this.tableData[0][i].粤核酸码]){
+          this.tableData[0][i].状态 = "未做核酸"
           doneList.push(this.tableData[0][i])
         }
+      }
+      if(doneList.length==0){
+        alert("无数据可下载！！！")
+        return
       }
       excelUtil.exportExcel(initColumn, doneList, '未登记人员名单.xlsx')
     },
